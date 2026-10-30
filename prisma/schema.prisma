@@ -1,0 +1,403 @@
+// AI Use-Case Factory — data model (prototype: SQLite).
+// SQLite has no scalar lists, so list/object fields are JSON strings (see lib/json.ts).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Setting {
+  key   String @id
+  value String
+  label String @default("")
+  group String @default("general")
+}
+
+model Function {
+  id       String    @id
+  name     String    @unique
+  region   String    @default("India")
+  users    User[]
+  requests Request[]
+  docs     ProcessDocument[]
+}
+
+model User {
+  id         String    @id
+  name       String
+  email      String    @unique
+  roles      String // comma-separated Role values
+  functionId String?
+  function   Function? @relation(fields: [functionId], references: [id])
+}
+
+model Request {
+  id               String    @id @default(cuid())
+  code             String    @unique
+  title            String
+  problemStatement String
+  summary          String    @default("{}") // structuredSummary JSON
+  functionId       String
+  function         Function  @relation(fields: [functionId], references: [id])
+  sites            String    @default("[]")
+  requesterId      String
+  sponsor          String    @default("")
+  urgency          String    @default("MEDIUM") // LOW | MEDIUM | HIGH
+  status           String    @default("SUBMITTED")
+  proposedRoute    String?
+  route            String?
+  routeReason      String    @default("")
+  routeAnswers     String    @default("{}")
+  routeConfidence  String    @default("")
+  routeSource      String    @default("")
+  exitTeam         String    @default("")
+  fastRoute        String    @default("{}") // { pilotPlan, owner, date }
+  clusterId        String?
+  cluster          Cluster?  @relation(fields: [clusterId], references: [id])
+  mergedIntoId     String?
+  relatedIds       String    @default("[]")
+  ownerId          String?
+  embedding        String    @default("[]")
+  // Risk / governance
+  gxp              Boolean   @default(false)
+  personalData     Boolean   @default(false)
+  externalUsers    Boolean   @default(false)
+  dataResidency    String    @default("India")
+  // Process map
+  mapSources       String    @default("[]")
+  mapGaps          String    @default("[]")
+  mapAlignedBy     String?
+  mapAlignedAt     DateTime?
+  mapGeneratedBy   String    @default("")
+  // Value
+  claimedBenefit   Float?
+  flagJustification String   @default("")
+  financeApprovedAt DateTime?
+  // Design
+  architecture     String    @default("")
+  mermaid          String    @default("")
+  approvalLevel    String?
+  councilMeetingId String?
+  councilMeeting   CouncilMeeting? @relation(fields: [councilMeetingId], references: [id])
+  goLiveAt         DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  similar       SimilarityLink[]
+  steps         ProcessStep[]
+  reuse         ReuseOption[]
+  valueInputs   ValueInput[]
+  costItems     CostItem[]
+  cases         BusinessCase[]
+  approvals     Approval[]
+  decisions     Decision[]
+  actuals       ValueActual[]
+  intake        IntakeMessage[]
+}
+
+model IntakeMessage {
+  id        String   @id @default(cuid())
+  requestId String?
+  request   Request? @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  sessionId String
+  role      String // agent | user
+  text      String
+  at        DateTime @default(now())
+}
+
+model Cluster {
+  id          String    @id @default(cuid())
+  name        String
+  description String    @default("")
+  requests    Request[]
+  createdAt   DateTime  @default(now())
+}
+
+model SimilarityLink {
+  id         String  @id @default(cuid())
+  requestId  String
+  request    Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  targetType String // REQUEST | ASSET
+  targetId   String
+  score      Float
+  reason     String
+}
+
+model Asset {
+  id             String  @id
+  name           String
+  type           String // PLATFORM | AGENT | SKILL | TEMPLATE | DATA_PRODUCT | APPLICATION | EMBEDDED_FEATURE
+  description    String
+  capabilities   String  @default("[]")
+  dataSources    String  @default("[]")
+  functionsUsing String  @default("[]")
+  ownerId        String?
+  maturity       String // PILOT | LIVE | CERTIFIED
+  targetTool     String  @default("Custom app")
+  embedding      String  @default("[]")
+  reuse          ReuseOption[]
+  items          MarketplaceItem[]
+}
+
+model SoftwareCapability {
+  id          String  @id @default(cuid())
+  software    String
+  feature     String
+  available   String // NOW | ROADMAP
+  roadmapDate String?
+  notes       String  @default("")
+  embedding   String  @default("[]")
+}
+
+model ProcessDocument {
+  id         String     @id
+  title      String
+  functionId String?
+  function   Function?  @relation(fields: [functionId], references: [id])
+  type       String // SOP | PROCESS_DESC | UPLOAD
+  content    String
+  version    String     @default("1.0")
+  chunks     DocChunk[]
+}
+
+model DocChunk {
+  id        String          @id @default(cuid())
+  docId     String
+  doc       ProcessDocument @relation(fields: [docId], references: [id], onDelete: Cascade)
+  idx       Int
+  text      String
+  embedding String
+}
+
+model ProcessStep {
+  id                  String  @id @default(cuid())
+  requestId           String
+  request             Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  order               Int
+  name                String
+  actor               String  @default("")
+  system              String  @default("")
+  minutesPerOccurrence Float  @default(0)
+  occurrencesPerMonth Float   @default(0)
+  peopleCount         Float   @default(1)
+  costPerHour         Float   @default(0)
+  errorRatePct        Float   @default(0)
+  costPerError        Float   @default(0)
+  painPoints          String  @default("[]")
+  aiOpportunity       String  @default("NONE") // NONE | ASSIST | AUTOMATE
+  aiPattern           String? // EXTRACTION | QA | CLASSIFICATION | SUMMARIZATION | DRAFTING | PREDICTION | AGENTIC
+  aiReason            String  @default("")
+  aiMinutes           Float   @default(0)
+  aiErrorRatePct      Float   @default(0)
+  aiConfidence        String  @default("MEDIUM")
+  citation            String  @default("") // docId#chunk
+  meta                String  @default("{}") // { field: { source, confidence, note } }
+}
+
+model ReuseOption {
+  id        String  @id @default(cuid())
+  requestId String
+  request   Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  assetId   String
+  asset     Asset   @relation(fields: [assetId], references: [id])
+  mode      String // AS_IS | AS_SKILL | BUILD_NEW
+  fitScore  Float
+  reason    String
+  selected  Boolean @default(false)
+}
+
+model ValueLever {
+  key         String  @id
+  name        String
+  formula     String
+  description String  @default("")
+  enabled     Boolean @default(true)
+}
+
+model ValueInput {
+  id         String  @id @default(cuid())
+  requestId  String
+  request    Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  leverKey   String
+  key        String
+  label      String  @default("")
+  value      Float
+  low        Float?
+  high       Float?
+  unit       String  @default("")
+  source     String  @default("USER") // USER | BENCHMARK | SYSTEM_DATA | FINANCE
+  sourceNote String  @default("")
+  confidence String  @default("MEDIUM") // HIGH | MEDIUM | LOW
+
+  @@unique([requestId, leverKey, key])
+}
+
+model Benchmark {
+  id          String @id @default(cuid())
+  pattern     String @unique
+  label       String
+  lowPct      Float
+  highPct     Float
+  note        String @default("")
+}
+
+model RoleCostRate {
+  id          String @id @default(cuid())
+  band        String @unique
+  ratePerHour Float
+}
+
+model ComponentCostCard {
+  id          String @id
+  name        String
+  unit        String
+  unitCostINR Float
+  category    String
+  kind        String // ONE_TIME | ANNUAL
+  notes       String @default("")
+  costItems   CostItem[]
+}
+
+model CostItem {
+  id          String            @id @default(cuid())
+  requestId   String
+  request     Request           @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  componentId String
+  component   ComponentCostCard @relation(fields: [componentId], references: [id])
+  quantity    Float
+  unitCost    Float
+  oneTime     Boolean
+  note        String            @default("")
+}
+
+model BusinessCase {
+  id             String   @id @default(cuid())
+  requestId      String
+  request        Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  version        Int
+  content        String // Markdown
+  slides         String   @default("[]")
+  snapshot       String   @default("{}") // calculated numbers used
+  netValue       Float
+  paybackMonths  Int?
+  roi            Float
+  recommendation String
+  generatedBy    String   @default("")
+  generatedAt    DateTime @default(now())
+}
+
+model Approval {
+  id         String    @id @default(cuid())
+  requestId  String
+  request    Request   @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  stage      String // FINANCE | LEVEL
+  level      String // L1 | L2 | L3 | FIN
+  approverId String
+  status     String    @default("PENDING") // PENDING | APPROVED | REJECTED | POC | MORE_DATA | AUTO_APPROVED | SKIPPED
+  comment    String    @default("")
+  dueAt      DateTime?
+  decidedAt  DateTime?
+  createdAt  DateTime  @default(now())
+}
+
+model CouncilMeeting {
+  id       String    @id @default(cuid())
+  date     DateTime
+  minutes  String    @default("")
+  requests Request[]
+}
+
+model Decision {
+  id          String   @id @default(cuid())
+  requestId   String
+  request     Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  outcome     String
+  decidedById String
+  conditions  String   @default("")
+  at          DateTime @default(now())
+}
+
+model MarketplaceItem {
+  id              String   @id @default(cuid())
+  assetId         String?
+  asset           Asset?   @relation(fields: [assetId], references: [id])
+  name            String
+  type            String // AGENT | SKILL | TEMPLATE | PLATFORM_EXTENSION | DATA_PRODUCT | APPLICATION
+  description     String
+  functions       String   @default("[]")
+  tier            String // PERSONAL | TEAM | CERTIFIED
+  ownerId         String
+  version         String   @default("1.0")
+  reviewDate      DateTime
+  howToUse        String   @default("")
+  targetTool      String   @default("Copilot")
+  usageCount      Int      @default(0)
+  rating          Float    @default(0)
+  ratingCount     Int      @default(0)
+  linkedRequestId String?
+  securityChecked Boolean  @default(false)
+  supportModel    String   @default("")
+  createdAt       DateTime @default(now())
+}
+
+model AccessRequest {
+  id        String   @id @default(cuid())
+  itemId    String
+  userId    String
+  at        DateTime @default(now())
+}
+
+model ValueActual {
+  id          String   @id @default(cuid())
+  requestId   String
+  request     Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  leverKey    String
+  period      String // M3 | M6 | M12
+  expected    Float
+  actualValue Float
+  note        String   @default("")
+  enteredById String
+  at          DateTime @default(now())
+
+  @@unique([requestId, leverKey, period])
+}
+
+model Notification {
+  id      String   @id @default(cuid())
+  userId  String
+  type    String
+  subject String
+  body    String
+  link    String   @default("")
+  channel String   @default("EMAIL")
+  read    Boolean  @default(false)
+  sentAt  DateTime @default(now())
+}
+
+model EditLog {
+  id       String   @id @default(cuid())
+  entity   String
+  entityId String
+  requestId String?
+  field    String
+  oldValue String
+  newValue String
+  userId   String
+  reason   String   @default("")
+  at       DateTime @default(now())
+}
+
+model AuditEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  entity    String
+  entityId  String
+  requestId String?
+  details   String   @default("")
+  at        DateTime @default(now())
+}
