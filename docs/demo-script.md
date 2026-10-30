@@ -1,0 +1,17 @@
+# Demo script (~15 minutes)
+
+Before you start: `npm run setup` (or *Admin → Demo data → Reset demo data*). Start as **Pod analyst – Arjun Sharma**.
+Switch roles with **Acting as** in the top bar. `npm run e2e` runs this whole script automatically.
+
+1. **Dashboard** (`/`) – show the funnel, backlog age and requests by route. *"Today this is an Excel file."*
+2. **Submit** – switch to *Requester – Priya Nair* (Quality). Open *Submit a problem*. Click **Demo answer** then **Send** for each question (8 questions). The summary appears; show that every field is editable. Click **Confirm and submit**.
+3. **Sort and route** – the request opens on *Similar & route*. Switch to *Pod analyst*. The check finds the 10 SOP requests from other sites (57–71% similar, with one-line reasons). In **Cluster**, the SOP requests are pre-selected → **Create cluster**. The routing panel shows Q1–Q4 all *No* → **R5 Custom AI**. Click **Confirm route**.
+4. **Fast route example** – Register → *Search our market research articles*: R2 Extend platform, Knowledge Assistant, fast-route pilot plan, Level 1 waiting for the Head of Digital & AI.
+5. **Process map** – *Process map & reuse* → **Build process map**. The map comes from `DOC-SOP-001` with a citation per step (click a source chip to see the chunk). AI opportunity and the reason per step. Reorder steps by drag or ↑/↓; edit a step. Reuse options show the Quality Document Writing Assistant and the Knowledge Assistant. Click **Mark as aligned** (mandatory checkpoint).
+6. **Simulation** – *Simulation & value*: totals, P10–P90 range, chart baseline vs. with-AI, value by lever and year. Open *Factors and lever inputs*, change **Realization factor** from 0.5 to 0.6, type a reason, **Save**. The value updates; the *Audit trail* tab shows the edit with old/new value and reason. Click **Value estimate done**.
+7. **Flags** – Register → *Pricing calculator app with AI price suggestions* → *Simulation & value*. The requester claimed ₹9 Cr; the engine shows ROI too high, exceeds current spend, headcount implied, out-of-range reductions and missing sources.
+8. **Design & cost** – back on the SOP request, switch to *Architect – Vikram Singh*. *Design & cost*: GxP → CSV/CSA required. Add cost cards (build effort, validation, LLM usage, hosting…). TCO, net value and payback update. **Draft architecture** → text + Mermaid diagram. **Design and cost done**.
+9. **Business case & slides** – switch to *Pod analyst*. *Business case* → **Generate business case**. Download **.docx** and **Council slides .pptx** (open in PowerPoint), or **Print / PDF**.
+10. **Approval** – *Approvals* → **Start approval workflow**. Level 3 (GxP), Finance first because the benefit is above ₹50 L. Show the email in **Outbox**. Switch to *Finance* → `/approvals` → **Approve**. Switch to *Council member – Sanjay Kulkarni* → `/council` → **Approve as POC**. Switch to *Council chair* → `/council` → **Approve as POC** (final). The decision log and the requester's email show the result. **Download slide pack** gives the full meeting pack.
+11. **Marketplace** – `/marketplace`: tiers, usage, ratings; *Tender response template* is past its review date (warning, lower ranking). Open an item → **Request access / use**.
+12. **Value dashboard** – `/value`: expected vs. realized (PPV commentary above plan, batch changeover below plan), by function and lever, estimate accuracy per AI pattern.
